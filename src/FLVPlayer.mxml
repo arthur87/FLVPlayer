@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" width="900" height="475"
+					   showStatusBar="false"
+					   applicationComplete="init(event);">
+	<fx:Declarations>
+		<!-- 非ビジュアルエレメント (サービス、値オブジェクトなど) をここに配置 -->
+	</fx:Declarations>
+		<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+	</fx:Style>
+	
+	<s:VideoPlayer id="player" width="900" height="450" y="25" />	
+	<mx:MenuBar id="menuBar" x="0" y="0" width="100%" height="25" labelField="@label">
+		<mx:XMLListCollection>
+			<fx:XMLList>
+				<menuitem label="ファイル">
+					<menuitem label="ファイルを開く" id="fileOpen"/>
+					<menuitem type="separator"/>
+					<menuitem label="再生/一時停止" id="pause"/>
+					<menuitem label="停止" id="stop"/>
+					<menuitem label="ループ再生" id="loop" type="check"/>
+					<menuitem type="separator"/>
+					<menuitem label="音量">
+						<menuitem label="上げる" id="volumeUp"/>
+						<menuitem label="下げる" id="volumeDown"/>		
+						<menuitem label="ミュート" id="mute"/>
+					</menuitem>
+					<menuitem type="separator"/>
+					<menuitem label="常に最前面に表示" id="alwaysInFront" type="check"/>
+				</menuitem>
+			</fx:XMLList>
+		</mx:XMLListCollection>	
+	</mx:MenuBar>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexNativeWindowBoundsEvent;
+			import mx.events.MenuEvent;
+			
+			public function init(event:Event):void
+			{
+				this.showStatusBar = false;
+				this.alwaysInFront = false;
+				this.addEventListener(FlexNativeWindowBoundsEvent.WINDOW_RESIZE, flexNativeWindowBoundsEventHandler);
+				menuBar.addEventListener(MenuEvent.ITEM_CLICK, menuBarMenuEventHandler);
+				player.addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,nativeDragEnterHandler);
+				player.addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,nativeDragDropHandler);
+			}
+			private function flexNativeWindowBoundsEventHandler(e:FlexNativeWindowBoundsEvent):void	
+			{
+				player.height = this.height;
+				player.width = this.width;
+			}
+			
+			private function nativeDragEnterHandler(e:NativeDragEvent):void
+			{
+				if(e.clipboard.hasFormat(ClipboardFormats.FILE_LIST_FORMAT)){
+					NativeDragManager.acceptDragDrop(player);
+				}
+			}
+			
+			private function nativeDragDropHandler(e:NativeDragEvent):void
+			{
+				var fileList:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				var file:File;
+				file = fileList[0];
+				player.source = file.url;
+			}
+			
+			private function menuBarMenuEventHandler(e:MenuEvent):void
+			{
+				var selectId:String = e.item.@id;
+				if(selectId == "fileOpen"){player.pause();fileOpenInit();}
+				if(selectId == "appExit"){player.pause();appExitInit();}
+				if(selectId == "pause"){player.playing ? player.pause() : player.play();}
+				if(selectId == "stop"){player.stop();}
+				if(selectId == "mute"){player.muted = !player.muted;}
+				if(selectId == "volumeUp"){player.volume += 0.1;}
+				if(selectId == "volumeDown"){player.volume -= 0.1;}
+				if(selectId == "loop"){player.loop = !player.loop;}
+				if(selectId == "alwaysInFront"){this.alwaysInFront = !this.alwaysInFront;}
+			}
+			
+			private function fileOpenInit():void
+			{
+				try {
+					var filter:FileFilter = new FileFilter("File", "*.flv;*.mp4;*.f4v;*.f4p");
+					var file:File = new File();
+					file.addEventListener(Event.SELECT, fileSelectHandler);
+					file.addEventListener(Event.CANCEL, cancelHandler);
+					file.browseForOpen("File", [filter]);
+				} catch (error:Error) {
+					trace(error.message);
+				}
+			}
+
+			private function fileSelectHandler(e:Event):void
+			{
+				player.source = "file:///" + e.target.nativePath;
+			}
+			
+			
+			private function cancelHandler(e:Event):void
+			{
+			}
+			private function appExitInit():void
+			{
+				this.nativeWindow.close(); 
+			}
+
+		]]>
+	</fx:Script>
+</s:WindowedApplication>
